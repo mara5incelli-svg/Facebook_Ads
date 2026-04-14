@@ -654,15 +654,11 @@ function goPage(name,btn){
 }
 
 // INIT
-ghConfig=loadGHConfig()
-if(!ghConfig){
-  ghConfig={user:'mara5incelli-svg',token:'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',repo:'Facebook_Ads'}
-  saveGHConfig(ghConfig)
-}
+// Token preconfigurato - connessione automatica
+ghConfig={user:'mara5incelli-svg',token:'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',repo:'Facebook_Ads'}
+saveGHConfig(ghConfig)
 document.getElementById('btnManualSync').disabled=false
-document.getElementById('ghToken').value=ghConfig.token
-document.getElementById('ghRepo').value=ghConfig.repo
-setGHStatus('sync','Connessione...')
+setGHStatus('sync','Connessione in corso...')
 ghPull().then(()=>refreshAll())
 const _hasData=ACCOUNTS.some(a=>Object.keys(allData[a.id]).length>0)
 if(_hasData)['dashboard','creativita','confronto'].forEach(t=>{document.getElementById('tab-'+t).disabled=false})
