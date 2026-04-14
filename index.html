@@ -366,7 +366,7 @@ function renderImport(){
   const acc=ACC_MAP[selAcc],months=allData[selAcc]
   const chips=Object.entries(months).sort().map(([k,d])=>{
     const tL=d.campagne.reduce((s,c)=>s+(c.risultati||0),0),tS=d.campagne.reduce((s,c)=>s+(c.spesa||0),0)
-    return `<div class="mchip" style="--c:${acc.color}">${d.label} &nbsp;·&nbsp; ${d.campagne.length} camp. &nbsp;·&nbsp; ${tL} lead &nbsp;·&nbsp; €${tS.toFixed(0)}<button class="mchip-x" style="--c:${acc.color}" onclick="event.stopPropagation();removeMonth('${selAcc}','${k}')">×</button></div>`
+    return `<div class="mchip" style="--c:${acc.color}">${d.label} &nbsp;·&nbsp; ${d.campagne.length} camp. &nbsp;·&nbsp; ${tL} lead &nbsp;·&nbsp; €${tS.toFixed(0)}</div>`
   }).join('')
   document.getElementById('importHeader').innerHTML=`
     <div class="imp-name"><div style="width:13px;height:13px;border-radius:50%;background:${acc.color};flex-shrink:0"></div>${acc.name}</div>
