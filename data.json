@@ -1,5 +1,184 @@
 {
-  "mg-beauty": {},
+  "mg-beauty": {
+    "2026-03": {
+      "label": "Marzo 2026",
+      "month": 3,
+      "year": 2026,
+      "campagne": [
+        {
+          "nome": "HYDRAFACE",
+          "risultati": 62,
+          "spesa": 311.79,
+          "impression": 4.386651,
+          "copertura": 15167,
+          "frequenza": 4.686293,
+          "cpm": 4.386651,
+          "clic": 920,
+          "cpc": null,
+          "ctr": null,
+          "cpr": 5.02887097,
+          "creativita": [
+            {
+              "nome": "Video 1",
+              "risultati": 24,
+              "spesa": 140.04,
+              "impression": 4.597203,
+              "copertura": 8972,
+              "frequenza": 3.39523,
+              "cpm": 4.597203,
+              "clic": 403,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 5.835,
+              "campagna": "HYDRAFACE"
+            },
+            {
+              "nome": "Video 4",
+              "risultati": null,
+              "spesa": 6.35,
+              "impression": 4.029188,
+              "copertura": 878,
+              "frequenza": 1.794989,
+              "cpm": 4.029188,
+              "clic": 10,
+              "cpc": null,
+              "ctr": null,
+              "cpr": null,
+              "campagna": "HYDRAFACE"
+            },
+            {
+              "nome": "Video 3",
+              "risultati": 38,
+              "spesa": 165.4,
+              "impression": 4.236789,
+              "copertura": 13332,
+              "frequenza": 2.928218,
+              "cpm": 4.236789,
+              "clic": 507,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 4.35263158,
+              "campagna": "HYDRAFACE"
+            }
+          ]
+        },
+        {
+          "nome": "EPILAZIONE LASER",
+          "risultati": 46,
+          "spesa": 254.5,
+          "impression": 3.330149,
+          "copertura": 18817,
+          "frequenza": 4.061381,
+          "cpm": 3.330149,
+          "clic": 537,
+          "cpc": null,
+          "ctr": null,
+          "cpr": 5.5326087,
+          "creativita": [
+            {
+              "nome": "Video 1 - laser",
+              "risultati": 1,
+              "spesa": 21.02,
+              "impression": 3.358901,
+              "copertura": 3378,
+              "frequenza": 1.852575,
+              "cpm": 3.358901,
+              "clic": 30,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 21.02,
+              "campagna": "EPILAZIONE LASER"
+            },
+            {
+              "nome": "Video 2 - laser",
+              "risultati": 5,
+              "spesa": 47.74,
+              "impression": 3.309762,
+              "copertura": 6992,
+              "frequenza": 2.062929,
+              "cpm": 3.309762,
+              "clic": 79,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 9.548,
+              "campagna": "EPILAZIONE LASER"
+            },
+            {
+              "nome": "Video 3 - laser",
+              "risultati": 40,
+              "spesa": 185.74,
+              "impression": 3.332197,
+              "copertura": 17944,
+              "frequenza": 3.106387,
+              "cpm": 3.332197,
+              "clic": 428,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 4.6435,
+              "campagna": "EPILAZIONE LASER"
+            }
+          ]
+        },
+        {
+          "nome": "CRIOLIPOLISI",
+          "risultati": 105,
+          "spesa": 219.57,
+          "impression": 3.679307,
+          "copertura": 16262,
+          "frequenza": 3.669721,
+          "cpm": 3.679307,
+          "clic": 942,
+          "cpc": null,
+          "ctr": null,
+          "cpr": 2.09114286,
+          "creativita": [
+            {
+              "nome": "CRIO - video 1",
+              "risultati": 84,
+              "spesa": 168.75,
+              "impression": 3.678955,
+              "copertura": 15670,
+              "frequenza": 2.927186,
+              "cpm": 3.678955,
+              "clic": 781,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 2.00892857,
+              "campagna": "CRIOLIPOLISI"
+            },
+            {
+              "nome": "CRIO - video 2",
+              "risultati": 21,
+              "spesa": 47.39,
+              "impression": 3.675638,
+              "copertura": 6099,
+              "frequenza": 2.113953,
+              "cpm": 3.675638,
+              "clic": 153,
+              "cpc": null,
+              "ctr": null,
+              "cpr": 2.25666667,
+              "campagna": "CRIOLIPOLISI"
+            },
+            {
+              "nome": "CRIO - video 3",
+              "risultati": null,
+              "spesa": 3.43,
+              "impression": 3.748634,
+              "copertura": 584,
+              "frequenza": 1.566781,
+              "cpm": 3.748634,
+              "clic": 8,
+              "cpc": null,
+              "ctr": null,
+              "cpr": null,
+              "campagna": "CRIOLIPOLISI"
+            }
+          ]
+        }
+      ]
+    }
+  },
   "f-medical": {},
   "s-medical": {},
   "kin-ceccano": {},
