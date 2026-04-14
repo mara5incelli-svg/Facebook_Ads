@@ -146,7 +146,7 @@ footer{text-align:center;padding:16px;color:#9CA3AF;font-size:11px}
     </div>
     <div class="form-row">
       <label class="form-label">Personal Access Token</label>
-      <input class="form-input" id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+      <input class="form-input" id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" value="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">
       <div class="form-hint">Vai su <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> → Tokens (classic) → Generate new token → spunta solo <strong>repo</strong></div>
     </div>
     <div class="form-row">
@@ -655,13 +655,15 @@ function goPage(name,btn){
 
 // INIT
 ghConfig=loadGHConfig()
-if(ghConfig){
-  document.getElementById('btnManualSync').disabled=false
-  setGHStatus('sync','Connessione...')
-  ghPull().then(()=>refreshAll())
-}else{
-  document.getElementById('modalOverlay').classList.remove('hidden')
+if(!ghConfig){
+  ghConfig={user:'mara5incelli-svg',token:'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',repo:'Facebook_Ads'}
+  saveGHConfig(ghConfig)
 }
+document.getElementById('btnManualSync').disabled=false
+document.getElementById('ghToken').value=ghConfig.token
+document.getElementById('ghRepo').value=ghConfig.repo
+setGHStatus('sync','Connessione...')
+ghPull().then(()=>refreshAll())
 const _hasData=ACCOUNTS.some(a=>Object.keys(allData[a.id]).length>0)
 if(_hasData)['dashboard','creativita','confronto'].forEach(t=>{document.getElementById('tab-'+t).disabled=false})
 renderImport()
