@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facebook Ads Analyzer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F0F2F5;color:#1C1C2E;font-size:14px}
+.topbar{background:#1A1A2E;color:#fff;padding:0 24px;display:flex;align-items:stretch;justify-content:space-between;position:sticky;top:0;z-index:100;height:54px}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.logo{font-size:15px;font-weight:700;letter-spacing:.3px}
+.logo em{color:#A78BFA;font-style:normal}
+.gh-status{display:flex;align-items:center;gap:6px;font-size:11px;color:#9CA3AF;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.06);cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:.15s}
+.gh-status:hover{background:rgba(255,255,255,.12)}
+.gh-dot{width:7px;height:7px;border-radius:50%;background:#9CA3AF;flex-shrink:0}
+.gh-dot.ok{background:#22C55E}.gh-dot.err{background:#EF4444}.gh-dot.sync{background:#F59E0B;animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.nav-tabs{display:flex;height:54px}
+.nav-tab{padding:0 18px;border:none;background:transparent;color:#9CA3AF;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:.15s;height:54px}
+.nav-tab.active{color:#fff;border-bottom-color:#A78BFA}
+.nav-tab:hover:not(.active){color:#D1D5DB}
+.nav-tab:disabled{opacity:.4;cursor:not-allowed}
+.page{display:none;padding:22px 24px;max-width:1440px;margin:0 auto}
+.page.active{display:block}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal-overlay.hidden{display:none}
+.modal{background:#fff;border-radius:16px;padding:28px 32px;width:100%;max-width:480px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.modal-sub{font-size:13px;color:#6B7280;margin-bottom:20px;line-height:1.5}
+.form-row{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:#374151;margin-bottom:5px;display:block}
+.form-input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #E5E7EB;font-size:13px;outline:none;transition:.15s;font-family:inherit}
+.form-input:focus{border-color:#7C3AED;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+.form-hint{font-size:11px;color:#9CA3AF;margin-top:4px;line-height:1.4}
+.form-hint a{color:#7C3AED}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.btn-primary{background:#0F3460;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.btn-primary:hover{background:#1a4a80}
+.btn-secondary{background:#fff;color:#374151;border:1.5px solid #E5E7EB;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary:hover{background:#F3F4F6}
+.modal-error{background:#FEF2F2;color:#DC2626;border-radius:7px;padding:10px 13px;font-size:12px;margin-bottom:12px;display:none}
+.modal-error.show{display:block}
+.import-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;min-height:calc(100vh - 80px)}
+.accounts-sidebar{display:flex;flex-direction:column;gap:6px;padding-top:2px}
+.sidebar-title{font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.7px;padding:2px 0 10px}
+.acc-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;cursor:pointer;border:1.5px solid #E5E7EB;background:#fff;transition:.15s}
+.acc-item:hover{border-color:var(--c)}
+.acc-item.selected{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,white)}
+.acc-dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex-shrink:0}
+.acc-label{font-weight:600;font-size:13px;flex:1;line-height:1.2}
+.acc-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:#F3F4F6;color:#9CA3AF}
+.acc-badge.has{background:color-mix(in srgb,var(--c) 15%,white);color:var(--c)}
+.import-main{display:flex;flex-direction:column;gap:14px}
+.import-header{background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:18px 20px}
+.imp-name{font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:3px}
+.imp-sub{font-size:12px;color:#6B7280}
+.month-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.mchip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--c) 12%,white);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 25%,white)}
+.mchip-x{background:none;border:none;cursor:pointer;color:color-mix(in srgb,var(--c) 60%,#666);font-size:14px;line-height:1;padding:0 1px}
+.mchip-x:hover{color:#EF4444}
+.drop-zone{border:2px dashed #C4B5FD;border-radius:12px;padding:32px;text-align:center;background:#fff;cursor:pointer;transition:.2s}
+.drop-zone:hover,.drop-zone.over{border-color:#7C3AED;background:#F5F3FF}
+.dz-icon{font-size:34px;margin-bottom:9px}
+.dz-title{font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:3px}
+.dz-sub{font-size:12px;color:#6B7280}
+.dz-hint{font-size:11px;color:#9CA3AF;margin-top:7px}
+.sync-bar{background:#fff;border-radius:9px;border:1px solid #E5E7EB;padding:10px 16px;display:flex;align-items:center;gap:10px;font-size:12px}
+.sync-bar-text{flex:1;color:#374151}
+.btn-sync{background:#0F3460;color:#fff;border:none;border-radius:7px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-sync:hover{background:#1a4a80}
+.btn-sync:disabled{background:#9CA3AF;cursor:not-allowed}
+.btn-go{background:#0F3460;color:#fff;border:none;border-radius:9px;padding:12px 40px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+.btn-go:hover{background:#1a4a80}
+.btn-go:disabled{background:#9CA3AF;cursor:not-allowed}
+.filter-bar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:16px;background:#fff;padding:10px 14px;border-radius:9px;border:1px solid #E5E7EB}
+.flabel{font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;margin-right:2px}
+.flabel.ml{margin-left:10px;padding-left:10px;border-left:1px solid #E5E7EB}
+.pill{padding:5px 13px;border-radius:20px;border:1.5px solid #E5E7EB;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#374151;transition:.15s;white-space:nowrap}
+.pill:hover{border-color:#7C3AED;color:#7C3AED}
+.pill.active{background:#1A1A2E;color:#fff;border-color:#1A1A2E}
+.section-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';width:3px;height:17px;border-radius:2px;background:#7C3AED;display:inline-block}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:18px}
+.kpi-card{background:#fff;border-radius:10px;padding:13px 15px;border:1px solid #E5E7EB}
+.kpi-label{font-size:10px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:700}
+.kpi-sub{font-size:10px;color:#9CA3AF;margin-top:3px}
+.kpi-delta{font-size:11px;font-weight:600;margin-top:3px}
+.kpi-delta.up{color:#059669}.kpi-delta.down{color:#DC2626}
+.cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin-bottom:16px}
+.card{background:#fff;border-radius:10px;padding:15px;border:1px solid #E5E7EB}
+.card-title{font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px}
+.table-wrap{overflow-x:auto;border-radius:9px;border:1px solid #E5E7EB;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:12px}
+th{background:#1A1A2E;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #F3F4F6;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAFA}
+.tr-tot td{background:#F3F4F6;font-weight:700;border-top:2px solid #E5E7EB}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.bg{background:#D1FAE5;color:#065F46}.bb{background:#DBEAFE;color:#1E40AF}
+.by{background:#FEF3C7;color:#92400E}.br{background:#FEE2E2;color:#991B1B}
+.insights-list{display:flex;flex-direction:column;gap:7px;margin-bottom:20px}
+.ins{display:flex;gap:9px;padding:10px 12px;border-radius:7px;border-left:3px solid;align-items:flex-start}
+.ins.good{background:#F0FDF4;border-color:#22C55E}
+.ins.warn{background:#FFFBEB;border-color:#F59E0B}
+.ins.bad{background:#FEF2F2;border-color:#F43F5E}
+.ins-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.ins-title{font-weight:700;font-size:12px}
+.ins-text{font-size:11px;color:#6B7280;margin-top:1px}
+.conf-card{background:#fff;border-radius:10px;border:1px solid #E5E7EB;padding:16px;margin-bottom:12px}
+.conf-title{font-size:13px;font-weight:700;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid #F3F4F6;display:flex;align-items:center;gap:8px}
+.kcr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F9FAFB;font-size:12px}
+.kcr:last-child{border-bottom:none}
+.kcr-l{color:#6B7280;flex:1}.kcr-v{display:flex;gap:14px;font-weight:600}
+.va{color:#1E40AF}.vb{color:#7C3AED}
+.vd.pos{color:#059669}.vd.neg{color:#DC2626}
+.no-data{text-align:center;padding:40px 20px;color:#9CA3AF;font-size:13px}
+footer{text-align:center;padding:16px;color:#9CA3AF;font-size:11px}
+@media(max-width:720px){
+  .import-layout{grid-template-columns:1fr}
+  .accounts-sidebar{display:grid;grid-template-columns:repeat(2,1fr)}
+  .sidebar-title{display:none}
+  .page{padding:12px}
+  .topbar{height:auto;padding:10px 16px;flex-direction:column;gap:8px}
+  .nav-tabs{width:100%;overflow-x:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#1A1A2E"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      Connetti GitHub
+    </div>
+    <div class="modal-sub">I dati vengono salvati in un repository privato GitHub e sincronizzati automaticamente. Inserisci il token solo la prima volta — viene salvato nel browser.</div>
+    <div class="modal-error" id="modalError"></div>
+    <div class="form-row">
+      <label class="form-label">Username GitHub</label>
+      <input class="form-input" id="ghUser" value="mara5incelli-svg" style="background:#F9FAFB;color:#6B7280" readonly>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Personal Access Token</label>
+      <input class="form-input" id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+      <div class="form-hint">Vai su <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> → Tokens (classic) → Generate new token → spunta solo <strong>repo</strong></div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Nome repository dati</label>
+      <input class="form-input" id="ghRepo" value="Facebook_Ads">
+      <div class="form-hint">Usa lo stesso repository dove hai caricato questa app. Verrà salvato un file data.json.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="skipGitHub()">Usa senza GitHub</button>
+      <button class="btn-primary" id="btnConnectGH" onclick="connectGitHub()">Connetti e sincronizza</button>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">Ads <em>Analyzer</em></div>
+    <div class="gh-status" id="ghStatus" onclick="openGHModal()">
+      <div class="gh-dot" id="ghDot"></div>
+      <span id="ghStatusText">Non connesso</span>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-import" onclick="goPage('import',this)">Importa</button>
+    <button class="nav-tab" id="tab-dashboard" onclick="goPage('dashboard',this)" disabled>Dashboard</button>
+    <button class="nav-tab" id="tab-creativita" onclick="goPage('creativita',this)" disabled>Creatività</button>
+    <button class="nav-tab" id="tab-confronto" onclick="goPage('confronto',this)" disabled>Confronto</button>
+  </div>
+</div>
+
+<div class="page active" id="page-import">
+  <div class="import-layout">
+    <div class="accounts-sidebar">
+      <div class="sidebar-title">Account</div>
+      <div id="accList"></div>
+    </div>
+    <div class="import-main">
+      <div class="sync-bar">
+        <div style="font-size:16px">☁️</div>
+        <div class="sync-bar-text" id="syncBarText">Connetti GitHub per salvare lo storico su cloud</div>
+        <button class="btn-sync" id="btnManualSync" onclick="manualSync()" disabled>Sincronizza</button>
+        <button class="btn-sync" style="background:#6B7280" onclick="openGHModal()">⚙️</button>
+      </div>
+      <div class="import-header" id="importHeader"></div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fi').click()">
+        <div class="dz-icon">📂</div>
+        <div class="dz-title">Trascina o clicca per caricare</div>
+        <div class="dz-sub">File .xlsx scaricato dal Business Manager</div>
+        <div class="dz-hint">Puoi caricare più mesi per ogni account</div>
+        <input type="file" id="fi" accept=".xlsx" multiple style="display:none" onchange="handleFiles(this.files);this.value=''">
+      </div>
+      <div style="text-align:center;padding-top:4px">
+        <button class="btn-go" id="btnGo" disabled onclick="runAnalysis()">▶ Analizza campagne</button>
+        <div style="font-size:11px;color:#9CA3AF;margin-top:7px">Carica almeno un file per procedere</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-dashboard">
+  <div class="filter-bar" id="dashFilters"></div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="cards-row">
+    <div class="card"><div class="card-title">Lead per campagna</div><canvas id="chartLeads" height="190"></canvas></div>
+    <div class="card"><div class="card-title">Distribuzione spesa</div><canvas id="chartSpesa" height="190"></canvas></div>
+  </div>
+  <div class="section-title">Riepilogo campagne</div>
+  <div id="tableCampagne"></div>
+  <div class="section-title">Insights automatici</div>
+  <div class="insights-list" id="insightsList"></div>
+</div>
+
+<div class="page" id="page-creativita">
+  <div class="filter-bar" id="creaFilters"></div>
+  <div id="tableCrea"></div>
+</div>
+
+<div class="page" id="page-confronto">
+  <div class="filter-bar" id="confFilters"></div>
+  <div id="confContent"></div>
+</div>
+
+<footer>Dati elaborati localmente · <button onclick="openGHModal()" style="background:none;border:none;color:#7C3AED;cursor:pointer;font-size:11px;text-decoration:underline;padding:0">Impostazioni GitHub</button></footer>
+
+<script>
+const ACCOUNTS=[
+  {id:'mg-beauty',name:'MG Beauty Clinic',color:'#7C3AED'},
+  {id:'f-medical',name:'F-Medical',color:'#0F3460'},
+  {id:'s-medical',name:'S-Medical',color:'#059669'},
+  {id:'kin-ceccano',name:'Kinetic Ceccano',color:'#D97706'},
+  {id:'kin-castelliri',name:'Kinetic Castelliri',color:'#DC2626'},
+  {id:'a-medical',name:'A-Medical',color:'#0891B2'},
+]
+const ACC_MAP=Object.fromEntries(ACCOUNTS.map(a=>[a.id,a]))
+const CAMP_COL=['#7C3AED','#0F3460','#059669','#D97706','#DC2626','#0891B2','#9D174D','#065F46']
+const CAMP_LGT=['#EDE9FE','#DBEAFE','#D1FAE5','#FEF3C7','#FEE2E2','#CFFAFE','#FCE7F3','#ECFDF5']
+const MESI={1:'Gennaio',2:'Febbraio',3:'Marzo',4:'Aprile',5:'Maggio',6:'Giugno',7:'Luglio',8:'Agosto',9:'Settembre',10:'Ottobre',11:'Novembre',12:'Dicembre'}
+const LS_KEY='adsAnalyzer_v2'
+const LS_GH='adsAnalyzer_gh'
+
+// GITHUB
+let ghConfig=null
+function loadGHConfig(){try{const r=localStorage.getItem(LS_GH);return r?JSON.parse(r):null}catch(e){return null}}
+function saveGHConfig(c){try{localStorage.setItem(LS_GH,JSON.stringify(c))}catch(e){}}
+
+const GH_API='https://api.github.com'
+async function ghReq(method,path,body){
+  const r=await fetch(GH_API+path,{method,headers:{'Authorization':'token '+ghConfig.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
+  const j=await r.json()
+  if(!r.ok) throw new Error(j.message||'GitHub error '+r.status)
+  return j
+}
+async function ensureRepo(){
+  try{await ghReq('GET',`/repos/${ghConfig.user}/${ghConfig.repo}`)}
+  catch(e){
+    if(e.message.includes('Not Found')){
+      await ghReq('POST',`/user/repos`,{name:ghConfig.repo,private:true,description:'Ads Analyzer data',auto_init:true})
+      await new Promise(r=>setTimeout(r,2000))
+    } else throw e
+  }
+}
+async function ghRead(file){
+  try{const d=await ghReq('GET',`/repos/${ghConfig.user}/${ghConfig.repo}/contents/${file}`);return{content:JSON.parse(atob(d.content.replace(/\n/g,''))),sha:d.sha}}
+  catch(e){if(e.message.includes('Not Found'))return{content:null,sha:null};throw e}
+}
+async function ghWrite(file,content,sha){
+  const body={message:'Aggiornamento '+new Date().toISOString().slice(0,10),content:btoa(unescape(encodeURIComponent(JSON.stringify(content,null,2))))}
+  if(sha)body.sha=sha
+  await ghReq('PUT',`/repos/${ghConfig.user}/${ghConfig.repo}/contents/${file}`,body)
+}
+async function ghPull(){
+  setGHStatus('sync','Caricamento...')
+  try{
+    await ensureRepo()
+    const{content}=await ghRead('data.json')
+    if(content){ACCOUNTS.forEach(a=>{if(!content[a.id])content[a.id]={}});allData=content;saveLocal()}
+    setGHStatus('ok',ghConfig.user+'/'+ghConfig.repo)
+    document.getElementById('syncBarText').textContent='Sincronizzato · '+new Date().toLocaleString('it-IT')
+    return true
+  }catch(e){setGHStatus('err','Errore connessione');document.getElementById('syncBarText').textContent='Errore: '+e.message;return false}
+}
+async function ghPush(){
+  if(!ghConfig)return
+  setGHStatus('sync','Salvataggio...')
+  try{
+    await ensureRepo()
+    const{sha}=await ghRead('data.json')
+    await ghWrite('data.json',allData,sha)
+    setGHStatus('ok',ghConfig.user+'/'+ghConfig.repo)
+    document.getElementById('syncBarText').textContent='Salvato su GitHub · '+new Date().toLocaleString('it-IT')
+  }catch(e){setGHStatus('err','Errore salvataggio');console.error(e)}
+}
+async function manualSync(){if(!ghConfig){openGHModal();return};await ghPull();refreshAll()}
+
+function openGHModal(){
+  document.getElementById('modalOverlay').classList.remove('hidden')
+  if(ghConfig){document.getElementById('ghToken').value=ghConfig.token;document.getElementById('ghRepo').value=ghConfig.repo}
+  document.getElementById('modalError').classList.remove('show')
+}
+function skipGitHub(){
+  document.getElementById('modalOverlay').classList.add('hidden')
+  setGHStatus('','Senza GitHub')
+  document.getElementById('syncBarText').textContent='Modalità locale — dati salvati solo in questo browser'
+}
+async function connectGitHub(){
+  const token=document.getElementById('ghToken').value.trim()
+  const repo=document.getElementById('ghRepo').value.trim()
+  const errEl=document.getElementById('modalError')
+  if(!token){showModalErr('Inserisci il token GitHub');return}
+  if(!repo){showModalErr('Inserisci il nome repository');return}
+  const btn=document.getElementById('btnConnectGH')
+  btn.disabled=true;btn.textContent='Connessione...'
+  errEl.classList.remove('show')
+  ghConfig={user:'mara5incelli-svg',token,repo}
+  try{
+    const ok=await ghPull()
+    if(ok){
+      saveGHConfig(ghConfig)
+      document.getElementById('modalOverlay').classList.add('hidden')
+      document.getElementById('btnManualSync').disabled=false
+      refreshAll()
+    }else{showModalErr('Impossibile connettersi. Verifica che il token sia valido e abbia il permesso "repo".');ghConfig=loadGHConfig()}
+  }catch(e){showModalErr('Errore: '+e.message);ghConfig=loadGHConfig()}
+  btn.disabled=false;btn.textContent='Connetti e sincronizza'
+}
+function showModalErr(msg){const el=document.getElementById('modalError');el.textContent=msg;el.classList.add('show')}
+function setGHStatus(state,text){
+  document.getElementById('ghDot').className='gh-dot'+(state?' '+state:'')
+  document.getElementById('ghStatusText').textContent=text
+}
+
+// LOCAL STORAGE
+function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(allData))}catch(e){}}
+function loadLocal(){
+  try{const r=localStorage.getItem(LS_KEY);if(!r)return null;const p=JSON.parse(r);ACCOUNTS.forEach(a=>{if(!p[a.id])p[a.id]={}});return p}
+  catch(e){return null}
+}
+
+// STATE
+let allData=loadLocal()||Object.fromEntries(ACCOUNTS.map(a=>[a.id,{}]))
+let selAcc=ACCOUNTS[0].id,dashAcc=ACCOUNTS[0].id,dashMonth=null
+let creaAcc=ACCOUNTS[0].id,creaMonth=null,creaCamp=null
+let confAcc=ACCOUNTS[0].id,charts={}
+
+// IMPORT UI
+function renderImport(){
+  const list=document.getElementById('accList');list.innerHTML=''
+  ACCOUNTS.forEach(a=>{
+    const n=Object.keys(allData[a.id]).length
+    const div=document.createElement('div')
+    div.className='acc-item'+(a.id===selAcc?' selected':'')
+    div.style.setProperty('--c',a.color)
+    div.innerHTML=`<div class="acc-dot"></div><div class="acc-label">${a.name}</div><div class="acc-badge ${n?'has':''}">${n?n+'&nbsp;mes'+(n===1?'e':'i'):'0'}</div>`
+    div.onclick=()=>{selAcc=a.id;renderImport()}
+    list.appendChild(div)
+  })
+  const acc=ACC_MAP[selAcc],months=allData[selAcc]
+  const chips=Object.entries(months).sort().map(([k,d])=>{
+    const tL=d.campagne.reduce((s,c)=>s+(c.risultati||0),0),tS=d.campagne.reduce((s,c)=>s+(c.spesa||0),0)
+    return `<div class="mchip" style="--c:${acc.color}">${d.label} &nbsp;·&nbsp; ${d.campagne.length} camp. &nbsp;·&nbsp; ${tL} lead &nbsp;·&nbsp; €${tS.toFixed(0)}<button class="mchip-x" style="--c:${acc.color}" onclick="event.stopPropagation();removeMonth('${selAcc}','${k}')">×</button></div>`
+  }).join('')
+  document.getElementById('importHeader').innerHTML=`
+    <div class="imp-name"><div style="width:13px;height:13px;border-radius:50%;background:${acc.color};flex-shrink:0"></div>${acc.name}</div>
+    <div class="imp-sub">Carica i file .xlsx del Business Manager per questo account</div>
+    ${chips?'<div class="month-chips">'+chips+'</div>':'<div style="font-size:12px;color:#9CA3AF;margin-top:10px">Nessun file caricato</div>'}`
+  const hasAny=ACCOUNTS.some(a=>Object.keys(allData[a.id]).length>0)
+  document.getElementById('btnGo').disabled=!hasAny
+  if(hasAny)['dashboard','creativita','confronto'].forEach(t=>{document.getElementById('tab-'+t).disabled=false})
+}
+function removeMonth(accId,key){delete allData[accId][key];saveLocal();ghPush();renderImport()}
+
+// FILE HANDLING
+const dz=document.getElementById('dropZone')
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')})
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'))
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFiles(e.dataTransfer.files)})
+function handleFiles(files){
+  Array.from(files).forEach(f=>{
+    if(!f.name.endsWith('.xlsx')){alert('Formato non supportato: '+f.name);return}
+    const reader=new FileReader()
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array'})
+        const ws=wb.Sheets[wb.SheetNames[0]]
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''})
+        parseFile(rows,selAcc);saveLocal();ghPush();renderImport()
+      }catch(err){alert('Errore lettura:\n'+f.name+'\n\n'+err.message);console.error(err)}
+    }
+    reader.onerror=()=>alert('Impossibile leggere: '+f.name)
+    reader.readAsArrayBuffer(f)
+  })
+}
+
+// PARSER
+function parseFile(rows,accId){
+  let i=0
+  while(i<rows.length){
+    const first=String(rows[i][0]||'').trim()
+    if(first.toUpperCase().startsWith('CAMPAGNA')){
+      const campTitle=first.replace(/^CAMPAGNA\s*/i,'').trim()
+      if(i+2<rows.length){
+        const hrow=rows[i+1],drow=rows[i+2]
+        if(String(drow[0]).match(/^\d{4}/)){
+          const colMap=buildColMap(hrow),campData=extractRow(drow,colMap)
+          campData.nome=campTitle
+          const m=String(drow[0]).match(/^(\d{4})-(\d{2})/)
+          if(m){
+            const year=m[1],mon=parseInt(m[2]),key=year+'-'+String(mon).padStart(2,'0')
+            if(!allData[accId][key])allData[accId][key]={label:MESI[mon]+' '+year,month:mon,year:parseInt(year),campagne:[]}
+            let j=i+3;const crea=[]
+            if(j<rows.length){
+              const crMap=buildColMap(rows[j]);j++
+              while(j<rows.length){
+                const r=rows[j],f0=String(r[0]||'').trim()
+                if(f0.toUpperCase().startsWith('CAMPAGNA'))break
+                if(String(r[0]).match(/^\d{4}/)){const cr=extractRow(r,crMap);cr.campagna=campTitle;crea.push(cr)}
+                j++
+              }
+              i=j-1
+            }
+            campData.creativita=crea
+            if(!allData[accId][key].campagne.find(c=>c.nome===campTitle))allData[accId][key].campagne.push(campData)
+          }
+        }
+      }
+    }
+    i++
+  }
+}
+function buildColMap(hrow){
+  const m={}
+  hrow.forEach((h,i)=>{
+    const hn=String(h||'').toLowerCase()
+    if(hn.includes('risultati')&&!hn.includes('indicatore')&&!hn.includes('costo'))m.risultati=i
+    if(hn.includes('importo speso'))m.spesa=i
+    if(hn.includes('impression'))m.impression=i
+    if(hn.includes('copertura'))m.copertura=i
+    if(hn.includes('frequenza'))m.frequenza=i
+    if(hn.includes('cpm'))m.cpm=i
+    if(hn.includes('clic sul link'))m.clic=i
+    if(hn.includes('cpc')&&hn.includes('link'))m.cpc=i
+    if(hn.includes('ctr')&&hn.includes('link'))m.ctr=i
+    if(hn.includes('costo per risultati'))m.cpr=i
+    if(hn.includes('nome della campagna')||hn.includes("nome dell'inserzione"))m.nome=i
+  })
+  return m
+}
+function extractRow(row,map){
+  const n=k=>{const v=parseFloat(String(row[map[k]]||'').replace(',','.'));return isNaN(v)?null:v}
+  const s=k=>String(row[map[k]]||'').trim()
+  return{nome:s('nome'),risultati:n('risultati'),spesa:n('spesa'),impression:n('impression'),copertura:n('copertura'),frequenza:n('frequenza'),cpm:n('cpm'),clic:n('clic'),cpc:n('cpc'),ctr:n('ctr'),cpr:n('cpr')}
+}
+
+// ANALISI
+function runAnalysis(){
+  const first=ACCOUNTS.find(a=>Object.keys(allData[a.id]).length>0);if(!first)return
+  dashAcc=first.id;dashMonth=Object.keys(allData[dashAcc]).sort()[0]
+  creaAcc=dashAcc;creaMonth=dashMonth;creaCamp=null;confAcc=dashAcc
+  renderDashboard();renderCrea();renderConfronto()
+  goPage('dashboard',document.getElementById('tab-dashboard'))
+}
+function refreshAll(){
+  renderImport()
+  const hasAny=ACCOUNTS.some(a=>Object.keys(allData[a.id]).length>0)
+  if(hasAny){
+    ['dashboard','creativita','confronto'].forEach(t=>{document.getElementById('tab-'+t).disabled=false})
+    if(dashMonth){renderDashboard();renderCrea();renderConfronto()}
+  }
+}
+
+// FILTER BAR
+function buildFilterBar(cid,activeAcc,activeMon,onAcc,onMon,extraFn){
+  const el=document.getElementById(cid);el.innerHTML=''
+  const lbA=document.createElement('span');lbA.className='flabel';lbA.textContent='Account';el.appendChild(lbA)
+  ACCOUNTS.forEach(a=>{
+    if(!Object.keys(allData[a.id]).length)return
+    const b=document.createElement('button')
+    b.className='pill'+(a.id===activeAcc?' active':'')
+    if(a.id===activeAcc)b.style.cssText=`background:${a.color};border-color:${a.color};color:#fff`
+    b.textContent=a.name;b.onclick=()=>onAcc(a.id);el.appendChild(b)
+  })
+  const months=Object.keys(allData[activeAcc]).sort()
+  if(months.length>1){
+    const lbM=document.createElement('span');lbM.className='flabel ml';lbM.textContent='Mese';el.appendChild(lbM)
+    months.forEach(mk=>{
+      const b=document.createElement('button')
+      b.className='pill'+(mk===activeMon?' active':'')
+      b.textContent=allData[activeAcc][mk].label;b.onclick=()=>onMon(mk);el.appendChild(b)
+    })
+  }
+  if(extraFn)extraFn(el)
+}
+
+// DASHBOARD
+function renderDashboard(){
+  if(!allData[dashAcc][dashMonth])dashMonth=Object.keys(allData[dashAcc]).sort()[0]
+  const acc=ACC_MAP[dashAcc]
+  buildFilterBar('dashFilters',dashAcc,dashMonth,id=>{dashAcc=id;dashMonth=Object.keys(allData[id]).sort()[0];renderDashboard()},mk=>{dashMonth=mk;renderDashboard()})
+  const data=allData[dashAcc][dashMonth]
+  if(!data){document.getElementById('kpiGrid').innerHTML='<div class="no-data">Nessun dato per questo account</div>';return}
+  const tL=data.campagne.reduce((s,c)=>s+(c.risultati||0),0),tS=data.campagne.reduce((s,c)=>s+(c.spesa||0),0)
+  const tI=data.campagne.reduce((s,c)=>s+(c.impression||0),0),tC=data.campagne.reduce((s,c)=>s+(c.clic||0),0)
+  const cpr=tL?tS/tL:0,cpm=tI?tS/tI*1000:0
+  const freq=data.campagne.length?data.campagne.reduce((s,c)=>s+(c.frequenza||0),0)/data.campagne.length:0
+  const conv=tC?tL/tC*100:0
+  const months=Object.keys(allData[dashAcc]).sort(),idx=months.indexOf(dashMonth)
+  const prev=idx>0?allData[dashAcc][months[idx-1]]:null
+  const pL=prev?prev.campagne.reduce((s,c)=>s+(c.risultati||0),0):null
+  const pS=prev?prev.campagne.reduce((s,c)=>s+(c.spesa||0),0):null
+  const pCPR=pL&&pS?pS/pL:null
+  const dlt=(cur,prv,inv=false)=>{if(!prv)return '';const p=((cur-prv)/Math.abs(prv)*100),g=inv?p<0:p>0;return `<div class="kpi-delta ${g?'up':'down'}">${p>0?'+':''}${p.toFixed(1)}% vs mese prec.</div>`}
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi-card"><div class="kpi-label">Lead totali</div><div class="kpi-value" style="color:${acc.color}">${tL}</div>${dlt(tL,pL)}</div>
+    <div class="kpi-card"><div class="kpi-label">Spesa totale</div><div class="kpi-value">€${tS.toFixed(2)}</div>${dlt(tS,pS,true)}</div>
+    <div class="kpi-card"><div class="kpi-label">Costo per lead</div><div class="kpi-value">€${cpr.toFixed(2)}</div>${dlt(cpr,pCPR,true)}</div>
+    <div class="kpi-card"><div class="kpi-label">Impression</div><div class="kpi-value">${fmtN(tI)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">CPM medio</div><div class="kpi-value">€${cpm.toFixed(2)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Frequenza media</div><div class="kpi-value">${freq.toFixed(2)}</div><div class="kpi-sub">${freq>4.5?'⚠️ alta':'nella norma'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Clic sul link</div><div class="kpi-value">${fmtN(tC)}</div><div class="kpi-sub">conv. ${conv.toFixed(1)}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">Campagne attive</div><div class="kpi-value">${data.campagne.length}</div><div class="kpi-sub">${data.label}</div></div>`
+  destroyChart('chartLeads');destroyChart('chartSpesa')
+  charts.chartLeads=new Chart(document.getElementById('chartLeads'),{type:'bar',data:{labels:data.campagne.map(c=>c.nome),datasets:[{data:data.campagne.map(c=>c.risultati||0),backgroundColor:data.campagne.map((_,i)=>CAMP_COL[i%CAMP_COL.length]),borderRadius:5}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#F3F4F6'}},x:{grid:{display:false}}},responsive:true}})
+  charts.chartSpesa=new Chart(document.getElementById('chartSpesa'),{type:'doughnut',data:{labels:data.campagne.map(c=>c.nome),datasets:[{data:data.campagne.map(c=>c.spesa||0),backgroundColor:data.campagne.map((_,i)=>CAMP_COL[i%CAMP_COL.length]),borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},cutout:'58%',responsive:true}})
+  document.getElementById('tableCampagne').innerHTML=buildCampTable(data.campagne,acc.color)
+  document.getElementById('insightsList').innerHTML=genInsights(data).map(ins=>`<div class="ins ${ins.type}"><div class="ins-icon">${ins.icon}</div><div><div class="ins-title">${ins.title}</div><div class="ins-text">${ins.text}</div></div></div>`).join('')
+}
+function buildCampTable(camps,acColor){
+  const tL=camps.reduce((s,c)=>s+(c.risultati||0),0),tS=camps.reduce((s,c)=>s+(c.spesa||0),0)
+  const tI=camps.reduce((s,c)=>s+(c.impression||0),0),tC=camps.reduce((s,c)=>s+(c.clic||0),0)
+  const rows=camps.map((c,i)=>{
+    const cpr=c.risultati?c.spesa/c.risultati:null,col=CAMP_COL[i%CAMP_COL.length],lgt=CAMP_LGT[i%CAMP_LGT.length]
+    return `<tr><td><span style="background:${lgt};color:${col};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">${c.nome}</span></td><td style="font-weight:700;color:${acColor}">${c.risultati??'—'}</td><td>€${(c.spesa||0).toFixed(2)}</td><td>${fmtN(c.impression||0)}</td><td>${fmtN(c.copertura||0)}</td><td>${(c.frequenza||0).toFixed(2)}</td><td>€${(c.cpm||0).toFixed(2)}</td><td>${fmtN(c.clic||0)}</td><td>${cpr?'€'+cpr.toFixed(2):'—'}</td><td>${tL?(c.risultati||0)/tL*100|0:0}%</td><td>${tS?(c.spesa||0)/tS*100|0:0}%</td><td>${cprBadge(cpr)}</td></tr>`
+  }).join('')
+  return `<div class="table-wrap"><table><thead><tr><th>Campagna</th><th>Lead</th><th>Spesa</th><th>Impression</th><th>Reach</th><th>Freq.</th><th>CPM</th><th>Clic</th><th>CPR</th><th>% Lead</th><th>% Spesa</th><th>Efficienza</th></tr></thead><tbody>${rows}<tr class="tr-tot"><td>TOTALE</td><td>${tL}</td><td>€${tS.toFixed(2)}</td><td>${fmtN(tI)}</td><td>—</td><td>—</td><td>—</td><td>${fmtN(tC)}</td><td>€${tL?(tS/tL).toFixed(2):0}</td><td>100%</td><td>100%</td><td>—</td></tr></tbody></table></div>`
+}
+
+// CREATIVITÀ
+function renderCrea(){
+  if(!allData[creaAcc][creaMonth])creaMonth=Object.keys(allData[creaAcc]).sort()[0]
+  const acc=ACC_MAP[creaAcc],data=allData[creaAcc][creaMonth]
+  buildFilterBar('creaFilters',creaAcc,creaMonth,id=>{creaAcc=id;creaMonth=Object.keys(allData[id]).sort()[0];creaCamp=null;renderCrea()},mk=>{creaMonth=mk;creaCamp=null;renderCrea()},el=>{
+    if(!data||data.campagne.length<2)return
+    const lbC=document.createElement('span');lbC.className='flabel ml';lbC.textContent='Campagna';el.appendChild(lbC)
+    const bAll=document.createElement('button');bAll.className='pill'+(!creaCamp?' active':'');bAll.textContent='Tutte';bAll.onclick=()=>{creaCamp=null;renderCrea()};el.appendChild(bAll)
+    data.campagne.forEach((c,i)=>{const b=document.createElement('button'),col=CAMP_COL[i%CAMP_COL.length];b.className='pill'+(creaCamp===c.nome?' active':'');b.style.cssText=creaCamp===c.nome?`background:${col};color:#fff;border-color:${col}`:`border-color:${col};color:${col}`;b.textContent=c.nome;b.onclick=()=>{creaCamp=c.nome;renderCrea()};el.appendChild(b)})
+  })
+  if(!data){document.getElementById('tableCrea').innerHTML='<div class="no-data">Nessun dato</div>';return}
+  const campTot={};data.campagne.forEach(c=>{campTot[c.nome]={lead:(c.creativita||[]).reduce((s,cr)=>s+(cr.risultati||0),0),spesa:(c.creativita||[]).reduce((s,cr)=>s+(cr.spesa||0),0)}})
+  let allCrea=[];data.campagne.forEach((c,ci)=>{if(creaCamp&&c.nome!==creaCamp)return;(c.creativita||[]).forEach(cr=>allCrea.push({...cr,campNome:c.nome,ci}))})
+  const rows=allCrea.map(cr=>{
+    const ct=campTot[cr.campNome]||{lead:1,spesa:1},cpr=cr.cpr||(cr.risultati?cr.spesa/cr.risultati:null)
+    const col=CAMP_COL[cr.ci%CAMP_COL.length],lgt=CAMP_LGT[cr.ci%CAMP_LGT.length]
+    return `<tr><td style="font-weight:600">${cr.nome||'—'}</td><td><span style="background:${lgt};color:${col};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">${cr.campagna}</span></td><td style="font-weight:700;color:${acc.color}">${cr.risultati!=null?cr.risultati:'—'}</td><td>€${(cr.spesa||0).toFixed(2)}</td><td>${fmtN(cr.impression||0)}</td><td>${fmtN(cr.copertura||0)}</td><td>${(cr.frequenza||0).toFixed(2)}</td><td>€${(cr.cpm||0).toFixed(2)}</td><td>${fmtN(cr.clic||0)}</td><td>${cpr?'€'+cpr.toFixed(2):'—'}</td><td>${ct.lead?(cr.risultati||0)/ct.lead*100|0:0}%</td><td>${ct.spesa?(cr.spesa||0)/ct.spesa*100|0:0}%</td><td>${cprBadge(cpr)}</td></tr>`
+  }).join('')
+  document.getElementById('tableCrea').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Creatività</th><th>Campagna</th><th>Lead</th><th>Spesa</th><th>Impression</th><th>Reach</th><th>Freq.</th><th>CPM</th><th>Clic</th><th>CPR</th><th>% Lead</th><th>% Spesa</th><th>Efficienza</th></tr></thead><tbody>${rows||'<tr><td colspan="13" class="no-data">Nessuna creatività</td></tr>'}</tbody></table></div>`
+}
+
+// CONFRONTO
+function renderConfronto(){
+  buildFilterBar('confFilters',confAcc,null,id=>{confAcc=id;renderConfronto()},()=>{})
+  const months=Object.keys(allData[confAcc]).sort(),el=document.getElementById('confContent')
+  if(months.length<2){el.innerHTML=`<div class="no-data">Carica almeno 2 mesi per <strong>${ACC_MAP[confAcc].name}</strong> per il confronto</div>`;return}
+  const acc=ACC_MAP[confAcc];let html=''
+  for(let i=0;i<months.length-1;i++){
+    const mA=months[i],mB=months[i+1],dA=allData[confAcc][mA],dB=allData[confAcc][mB]
+    const tLA=dA.campagne.reduce((s,c)=>s+(c.risultati||0),0),tSA=dA.campagne.reduce((s,c)=>s+(c.spesa||0),0)
+    const tLB=dB.campagne.reduce((s,c)=>s+(c.risultati||0),0),tSB=dB.campagne.reduce((s,c)=>s+(c.spesa||0),0)
+    const cprA=tLA?tSA/tLA:0,cprB=tLB?tSB/tLB:0
+    html+=`<div class="conf-card"><div class="conf-title"><div style="width:9px;height:9px;border-radius:50%;background:${acc.color}"></div>${acc.name} — ${dA.label} → ${dB.label}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+        <div>${kpiRow('Lead totali',tLA,tLB,false)}${kpiRow('Spesa totale',tSA,tSB,true,'€')}${kpiRow('Costo per lead',cprA,cprB,true,'€')}${kpiRow('Impression',dA.campagne.reduce((s,c)=>s+(c.impression||0),0),dB.campagne.reduce((s,c)=>s+(c.impression||0),0),false)}${kpiRow('Clic',dA.campagne.reduce((s,c)=>s+(c.clic||0),0),dB.campagne.reduce((s,c)=>s+(c.clic||0),0),false)}</div>
+        ${buildCampConf(dA,dB)}
+      </div>${buildCreaConf(dA,dB,mA,mB)}</div>`
+  }
+  el.innerHTML=html
+}
+function kpiRow(label,vA,vB,inv,pre=''){
+  const delta=vA?((vB-vA)/Math.abs(vA)*100):0,g=inv?delta<0:delta>0,s=delta>0?'+':''
+  const fmt=v=>pre+(typeof v==='number'?v.toFixed(pre?2:0):v)
+  return `<div class="kcr"><div class="kcr-l">${label}</div><div class="kcr-v"><span class="va">${fmt(vA)}</span><span class="vb">${fmt(vB)}</span><span class="vd ${g?'pos':'neg'}">${s}${delta.toFixed(1)}%</span></div></div>`
+}
+function buildCampConf(dA,dB){
+  const nA=dA.campagne.map(c=>c.nome),nB=dB.campagne.map(c=>c.nome)
+  const common=nA.filter(n=>nB.includes(n)),newC=nB.filter(n=>!nA.includes(n))
+  if(!common.length&&!newC.length)return ''
+  let h='<div>'
+  if(common.length){
+    h+=`<div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Campagne comuni</div>`
+    common.forEach(name=>{
+      const cA=dA.campagne.find(c=>c.nome===name),cB=dB.campagne.find(c=>c.nome===name)
+      const cpA=cA&&cA.risultati?cA.spesa/cA.risultati:null,cpB=cB&&cB.risultati?cB.spesa/cB.risultati:null
+      const ld=cA&&cB?(cB.risultati||0)-(cA.risultati||0):null
+      h+=`<div style="padding:8px 0;border-bottom:1px solid #F9FAFB"><div style="font-weight:600;font-size:12px;margin-bottom:3px">${name}</div><div style="display:flex;gap:14px;font-size:12px;flex-wrap:wrap"><div><span style="color:#9CA3AF">Lead </span><span class="va">${cA?.risultati??'—'}</span> → <span class="vb">${cB?.risultati??'—'}</span>${ld!==null?`<span style="color:${ld>=0?'#059669':'#DC2626'};font-weight:700"> (${ld>=0?'+':''}${ld})</span>`:''}</div><div><span style="color:#9CA3AF">CPR </span><span class="va">${cpA?'€'+cpA.toFixed(2):'—'}</span> → <span class="vb">${cpB?'€'+cpB.toFixed(2):'—'}</span>${cpA&&cpB?`<span style="color:${cpB<=cpA?'#059669':'#DC2626'};font-weight:700"> ${cpB<=cpA?'▼':'▲'}</span>`:''}</div></div></div>`
+    })
+  }
+  if(newC.length){
+    h+=`<div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.4px;margin-top:12px;margin-bottom:8px">Nuove campagne</div>`
+    newC.forEach(name=>{const c=dB.campagne.find(c=>c.nome===name),cpr=c&&c.risultati?c.spesa/c.risultati:null;h+=`<div style="padding:7px 0;border-bottom:1px solid #F9FAFB;font-size:12px"><span style="font-weight:600">${name}</span><span style="color:#6B7280;margin-left:8px">${c?.risultati||0} lead · €${(c?.spesa||0).toFixed(2)} · CPR ${cpr?'€'+cpr.toFixed(2):'—'}</span></div>`})
+  }
+  return h+'</div>'
+}
+function buildCreaConf(dA,dB,mA,mB){
+  const common=dA.campagne.map(c=>c.nome).filter(n=>dB.campagne.map(c=>c.nome).includes(n))
+  if(!common.length)return ''
+  let rows=''
+  common.forEach(camp=>{
+    const cA=dA.campagne.find(c=>c.nome===camp),cB=dB.campagne.find(c=>c.nome===camp)
+    const names=[...new Set([...(cA?.creativita||[]).map(c=>c.nome),...(cB?.creativita||[]).map(c=>c.nome)])]
+    names.forEach(crName=>{
+      const crA=(cA?.creativita||[]).find(c=>c.nome===crName),crB=(cB?.creativita||[]).find(c=>c.nome===crName)
+      const cpA=crA&&crA.risultati?crA.spesa/crA.risultati:(crA?.cpr||null),cpB=crB&&crB.risultati?crB.spesa/crB.risultati:(crB?.cpr||null)
+      const ld=crA&&crB?(crB.risultati||0)-(crA.risultati||0):null,cd=cpA&&cpB?((cpB-cpA)/cpA*100):null
+      rows+=`<tr><td style="font-weight:600">${crName}</td><td style="font-size:11px;color:#6B7280">${camp}</td><td class="va">${crA?.risultati!=null?crA.risultati:'—'}</td><td class="vb">${crB?.risultati!=null?crB.risultati:'—'}</td><td>${ld!=null?`<span style="color:${ld>=0?'#059669':'#DC2626'};font-weight:700">${ld>=0?'+':''}${ld}</span>`:'—'}</td><td class="va">${cpA?'€'+cpA.toFixed(2):'—'}</td><td class="vb">${cpB?'€'+cpB.toFixed(2):'—'}</td><td>${cd!=null?`<span style="color:${cd<=0?'#059669':'#DC2626'};font-weight:700">${cd>0?'+':''}${cd.toFixed(1)}%</span>`:'—'}</td><td>${cprBadge(cpB||cpA)}</td></tr>`
+    })
+  })
+  if(!rows)return ''
+  const lA=allData[confAcc][mA].label.split(' ')[0],lB=allData[confAcc][mB].label.split(' ')[0]
+  return `<div style="margin-top:14px"><div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Confronto creatività</div><div class="table-wrap"><table><thead><tr><th>Creatività</th><th>Campagna</th><th style="color:#93C5FD">Lead ${lA}</th><th style="color:#C4B5FD">Lead ${lB}</th><th>Δ Lead</th><th style="color:#93C5FD">CPR ${lA}</th><th style="color:#C4B5FD">CPR ${lB}</th><th>Δ CPR%</th><th>Efficienza</th></tr></thead><tbody>${rows}</tbody></table></div></div>`
+}
+
+// INSIGHTS
+function genInsights(data){
+  const ins=[]
+  const cprs=data.campagne.filter(c=>c.risultati).map(c=>({nome:c.nome,cpr:c.spesa/c.risultati}))
+  if(cprs.length){const best=cprs.reduce((a,b)=>a.cpr<b.cpr?a:b);ins.push({type:'good',icon:'🏆',title:`Miglior CPR: ${best.nome}`,text:`Costo per lead €${best.cpr.toFixed(2)} — campagna più efficiente`})}
+  data.campagne.forEach(c=>{
+    if((c.frequenza||0)>4.5)ins.push({type:'warn',icon:'⚠️',title:`Ad fatigue: ${c.nome}`,text:`Frequenza ${(c.frequenza||0).toFixed(2)} — amplia l'audience o rinnova le creatività`})
+    if((c.cpm||0)>5)ins.push({type:'warn',icon:'📈',title:`CPM alto: ${c.nome}`,text:`CPM €${(c.cpm||0).toFixed(2)} — audience satura`})
+    if(!c.risultati)ins.push({type:'bad',icon:'❌',title:`Nessun lead: ${c.nome}`,text:'Campagna attiva senza conversioni'})
+    ;(c.creativita||[]).forEach(cr=>{if(!cr.risultati&&(cr.spesa||0)>5)ins.push({type:'bad',icon:'💸',title:`Spesa senza lead: "${cr.nome}"`,text:`€${(cr.spesa||0).toFixed(2)} spesi senza conversioni in ${c.nome}`})})
+  })
+  if(!ins.length)ins.push({type:'good',icon:'✅',title:'Andamento regolare',text:'Nessuna anomalia rilevata per questo periodo'})
+  return ins
+}
+
+// UTILS
+function cprBadge(cpr){if(!cpr)return '<span class="badge br">Nessun lead</span>';if(cpr<3)return '<span class="badge bg">Ottimo</span>';if(cpr<6)return '<span class="badge bb">Buono</span>';if(cpr<10)return '<span class="badge by">Nella media</span>';return '<span class="badge br">Da ottimizzare</span>'}
+function fmtN(n){return Number(n).toLocaleString('it-IT')}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+function goPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'))
+  document.getElementById('page-'+name).classList.add('active')
+  const tab=btn||document.getElementById('tab-'+name);if(tab)tab.classList.add('active')
+}
+
+// INIT
+ghConfig=loadGHConfig()
+if(ghConfig){
+  document.getElementById('btnManualSync').disabled=false
+  setGHStatus('sync','Connessione...')
+  ghPull().then(()=>refreshAll())
+}else{
+  document.getElementById('modalOverlay').classList.remove('hidden')
+}
+const _hasData=ACCOUNTS.some(a=>Object.keys(allData[a.id]).length>0)
+if(_hasData)['dashboard','creativita','confronto'].forEach(t=>{document.getElementById('tab-'+t).disabled=false})
+renderImport()
+</script>
+</body>
+</html>
